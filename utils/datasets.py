@@ -46,7 +46,7 @@ def exif_size(img):
     return s
 
 
-def create_dataloader(path, imgsz, batch_size, stride, opt, hyp=None, augment=False, cache=False, pad=0.0, rect=False,
+def create_dataloader(path, imgsz, batch_size, stride, single_cls, hyp=None, augment=False, cache=False, pad=0.0, rect=False,
                       local_rank=-1, world_size=1):
     # Make sure only the first process in DDP process the dataset first, and the following others can use the cache.
     with torch_distributed_zero_first(local_rank):
@@ -55,7 +55,7 @@ def create_dataloader(path, imgsz, batch_size, stride, opt, hyp=None, augment=Fa
                                       hyp=hyp,  # augmentation hyperparameters
                                       rect=rect,  # rectangular training
                                       cache_images=cache,
-                                      single_cls=opt.single_cls,
+                                      single_cls=single_cls,
                                       stride=int(stride),
                                       pad=pad)
 
@@ -330,6 +330,8 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         # Define labels
         self.label_files = [x.replace('images', 'labels').replace(os.path.splitext(x)[-1], '.txt') for x in
                             self.img_files]
+        #self.label_files = [x.replace(os.path.splitext(x)[-1], '.txt') for x in
+        #                    self.img_files]
 
         # Check cache
         cache_path = str(Path(self.label_files[0]).parent) + '.cache'  # cached labels
@@ -341,6 +343,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
             cache = self.cache_labels(cache_path)  # cache
 
         # Get labels
+        #print(cache['/home/ubuntu/roadsign/train_original_size/images/DAT3-20200113_153838_NF-126.jpg'])
         labels, shapes = zip(*[cache[x] for x in self.img_files])
         self.shapes = np.array(shapes, dtype=np.float64)
         self.labels = list(labels)
@@ -452,7 +455,8 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                 assert (shape[0] > 9) & (shape[1] > 9), 'image size <10 pixels'
                 if os.path.isfile(label):
                     with open(label, 'r') as f:
-                        l = np.array([x.split() for x in f.read().splitlines()], dtype=np.float32)  # labels
+                        #l = np.array([x.split() for x in f.read().splitlines()], dtype=np.float32)  # labels
+                        l = np.array([x.strip().split() for x in f.read().splitlines() if x.strip()], dtype=np.float32)
                 if len(l) == 0:
                     l = np.zeros((0, 5), dtype=np.float32)
                 x[img] = [l, shape]
@@ -492,16 +496,16 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
 
         else:
             # Load image
-            img, (h0, w0), (h, w) = load_image(self, index)
-
+            img, (h0, w0), (h, w) = load_image(self, index) # original size (h0, w0): (2160, 3840), resize (h, w): (504, 896)
             # Letterbox
             shape = self.batch_shapes[self.batch[index]] if self.rect else self.img_size  # final letterboxed shape
-            img, ratio, pad = letterbox(img, shape, auto=False, scaleup=self.augment)
+            img, ratio, pad = letterbox(img, shape, auto=False, scaleup=self.augment) # img.shape: (544, 928, 3), pad: (16.0, 20.0)
             shapes = (h0, w0), ((h / h0, w / w0), pad)  # for COCO mAP rescaling
 
             # Load labels
             labels = []
             x = self.labels[index]
+            #print('x',x)
             if x.size > 0:
                 # Normalized xywh to pixel xyxy format
                 labels = x.copy()
@@ -528,6 +532,8 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
             #     labels = cutout(img, labels)
 
         nL = len(labels)  # number of labels
+        #print('>> labels')
+        #print(nL, labels)
         if nL:
             labels[:, 1:5] = xyxy2xywh(labels[:, 1:5])  # convert xyxy to xywh
             labels[:, [2, 4]] /= img.shape[0]  # normalized height 0-1
@@ -553,7 +559,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         # Convert
         img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
         img = np.ascontiguousarray(img)
-
+        #print(img.shape, labels_out,index, shapes)
         return torch.from_numpy(img), labels_out, self.img_files[index], shapes
 
     @staticmethod
