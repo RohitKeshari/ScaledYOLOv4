@@ -129,6 +129,24 @@ Just `Ctrl+C` to stop training and resume training by:
 python -m torch.distributed.launch --nproc_per_node 4 train.py --batch-size 64 --img 896 896 --data coco.yaml --cfg yolov4-p5.yaml --weights 'runs/exp0_yolov4-p5/weights/last.pt' --sync-bn --device 0,1,2,3 --name yolov4-p5 --resume
 ```
 
+## OpenVino Support
+
+https://github.com/Chen-MingChang/pytorch_YOLO_OpenVINO_demo
+
+
+## Blog
+
+https://alexeyab84.medium.com/scaled-yolo-v4-is-the-best-neural-network-for-object-detection-on-ms-coco-dataset-39dfa22fa982
+https://github.com/AlexeyAB/darknet/issues/7087
+
+## Darknet
+
+https://github.com/AlexeyAB/darknet
+
+## training/testing loss visualization
+https://github.com/ultralytics/yolov3/blob/master/tutorial.ipynb
+https://wandb.ai/
+
 ## Citation
 
 ```
