@@ -1,0 +1,10 @@
+# train and val datasets (image directory or *.txt file with image paths)
+train: ../pacman-dataset/train_v1.1.0.txt  
+val: ../pacman-dataset/test_v1.0.0.txt    
+test: ../pacman-dataset/test_v1.1.0.txt  
+
+# number of classes
+nc: 7
+
+# class names
+names: ['NO-LEFT', 'DO-NOT-ENTER', 'NO-RIGHT', 'ONE-WAY', 'LEFT-ONLY-LANE', 'MAX-SPEED-LIMIT', 'STOP']
